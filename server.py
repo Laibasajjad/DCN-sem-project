@@ -1,58 +1,69 @@
 import socket
 import threading
-
+import os
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 server.bind(("0.0.0.0", 5000))
-
-
 server.listen()
 
-print("Server is running...")
+print("🚀 Server running...")
 
 clients = {}
+usernames = {}
 
-# BROADCAST MESSAGE
-def broadcast(message):
-    for client in list(clients.values()):
-        try:
-            client.send(message)
-        except:
-            pass
+
+def broadcast(msg, sender=None):
+    for user, conn in clients.items():
+        if user != sender:
+            try:
+                conn.send(msg)
+            except:
+                pass
+
 
 def handle(conn):
     username = conn.recv(1024).decode()
     clients[username] = conn
+    usernames[conn] = username
 
-    broadcast(f"{username} joined the chat".encode())
+    print(f"{username} joined")
+    broadcast(f"📢 {username} joined".encode())
 
     while True:
         try:
-            msg = conn.recv(1024).decode()
+            data = conn.recv(4096)
 
-            if msg.startswith("@"):
-                parts = msg[1:].split(" ", 1)
+            if data.startswith(b"FILE:"):
+                filename, filedata = data[5:].split(b"|", 1)
 
-                if len(parts) == 2:
-                    target, text = parts
+                print(f"📁 File from {username}: {filename.decode()}")
 
-                    if target in clients:
-                        clients[target].send(f"[DM] {username}: {text}".encode())
+                # broadcast file to others
+                for user, c in clients.items():
+                    if user != username:
+                        c.send(data)
 
             else:
-                broadcast(f"{username}: {msg}".encode())
+                msg = data.decode()
+
+                # private message
+                if msg.startswith("@"):
+                    target, text = msg[1:].split(" ", 1)
+                    if target in clients:
+                        clients[target].send(f"[DM] {username}: {text}".encode())
+                else:
+                    broadcast(f"{username}: {msg}".encode(), username)
 
         except:
             break
 
+    print(f"{username} left")
     del clients[username]
     conn.close()
 
 
-# ACCEPT CLIENTS
 while True:
     conn, addr = server.accept()
-
     threading.Thread(target=handle, args=(conn,)).start()
