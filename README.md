@@ -49,7 +49,9 @@ The project demonstrates core concepts of Data Communication and Networking (DCN
 ## Project Structure
 
 DCN/
+
 │── server.py      # Handles client connections, messaging, and file transfer
+
 │── client.py      # GUI-based chat client
 
 ---
