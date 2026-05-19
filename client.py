@@ -1,4 +1,5 @@
 import socket
+import threading
 import tkinter as tk 
 
 # client socket created 
@@ -51,6 +52,11 @@ entry = tk.Entry(
 
 entry.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.X, expand=True)
 
+def display(msg):
+    chat_box.config(state=tk.NORMAL)
+    chat_box.insert(tk.END, f"\n{msg}")
+    chat_box.config(state=tk.DISABLED)
+    chat_box.see(tk.END)
 
 # SEND MESSAGE
 def send_msg():
@@ -63,6 +69,16 @@ def send_msg():
 
         entry.delete(0, tk.END)
 
+# RECEIVE MESSAGE
+def receive():
+    while True:
+        try:
+            msg = client.recv(1024).decode()
+
+            display(msg)
+
+        except:
+            break
 
 # SEND BUTTON
 send_btn = tk.Button(
@@ -75,5 +91,11 @@ send_btn = tk.Button(
 
 send_btn.pack(side=tk.RIGHT, padx=10)
 
+# ENTER KEY
+entry.bind("<Return>", lambda event: send_msg())
+
+
+# START RECEIVE THREAD
+threading.Thread(target=receive, daemon=True).start()
 
 window.mainloop()

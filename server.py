@@ -1,4 +1,6 @@
 import socket
+import threading
+
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -10,14 +12,40 @@ server.listen()
 
 print("Server is running...")
 
-while True:
-    
-    conn, addr = server.accept()
+clients = {}
 
-    print(f"Connected with {addr}")
+# BROADCAST MESSAGE
+def broadcast(message):
+    for client in clients.values():
+        client.send(message)
 
+
+
+# HANDLE CLIENT
+def handle(conn):
     username = conn.recv(1024).decode()
 
-    print(f"{username} joined the chat")
+    clients[username] = conn
 
+    print(f"{username} joined")
+
+    broadcast(f"{username} joined the chat".encode())
+
+    while True:
+        try:
+            msg = conn.recv(1024)
+
+            broadcast(msg)
+
+        except:
+            break
+
+    del clients[username]
     conn.close()
+
+
+# ACCEPT CLIENTS
+while True:
+    conn, addr = server.accept()
+
+    threading.Thread(target=handle, args=(conn,)).start()
