@@ -16,26 +16,33 @@ clients = {}
 
 # BROADCAST MESSAGE
 def broadcast(message):
-    for client in clients.values():
-        client.send(message)
+    for client in list(clients.values()):
+        try:
+            client.send(message)
+        except:
+            pass
 
-
-
-# HANDLE CLIENT
 def handle(conn):
     username = conn.recv(1024).decode()
-
     clients[username] = conn
-
-    print(f"{username} joined")
 
     broadcast(f"{username} joined the chat".encode())
 
     while True:
         try:
-            msg = conn.recv(1024)
+            msg = conn.recv(1024).decode()
 
-            broadcast(msg)
+            if msg.startswith("@"):
+                parts = msg[1:].split(" ", 1)
+
+                if len(parts) == 2:
+                    target, text = parts
+
+                    if target in clients:
+                        clients[target].send(f"[DM] {username}: {text}".encode())
+
+            else:
+                broadcast(f"{username}: {msg}".encode())
 
         except:
             break

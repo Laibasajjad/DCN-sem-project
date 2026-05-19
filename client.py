@@ -58,15 +58,11 @@ def display(msg):
     chat_box.config(state=tk.DISABLED)
     chat_box.see(tk.END)
 
-# SEND MESSAGE
 def send_msg():
     msg = entry.get()
 
     if msg != "":
-        chat_box.config(state=tk.NORMAL)
-        chat_box.insert(tk.END, f"\nYou: {msg}")
-        chat_box.config(state=tk.DISABLED)
-
+        client.send(msg.encode())
         entry.delete(0, tk.END)
 
 # RECEIVE MESSAGE
